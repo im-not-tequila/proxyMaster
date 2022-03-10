@@ -10,37 +10,54 @@ ua = UserAgent()
 
 
 class Settings:
-    MAX_THREADS = 15
-    TIMEOUT = 5
-    TESTING_URL = 'https://tengrinews.kz/news'
-    USER = 'im_not_tequila'
+    MAX_THREADS = 1
+    TIMEOUT = 10
+    TESTING_URL = 'https://ya.ru/'
 
 
 def load_proxies():
+    path = 'Proxy-List-master/http.txt'
+    #path = 'socks5_list-master/proxy.txt'
     out = 'proxies.zip'
-    url = 'https://github.com/hookzof/socks5_list/archive/refs/heads/master.zip'
+    url = 'https://github.com/ShiftyTR/Proxy-List/archive/refs/heads/master.zip'
+    #url = 'https://github.com/hookzof/socks5_list/archive/refs/heads/master.zip'
     print(Fore.CYAN + "Загрузка прокси: " + Fore.BLUE + url)
     rq.urlretrieve(url, out)
 
     with zipfile.ZipFile(out) as z:
-        z.extract('socks5_list-master/proxy.txt')
+        z.extract(path)
     print(Fore.CYAN + "Загрузка завершена\n")
 
-    return open('socks5_list-master/proxy.txt').readlines()
+    return open(path).readlines()
 
 
 async def check(num, proxies_q):
     while not proxies_q.empty():
         proxy = await proxies_q.get()
         proxy = proxy.replace("\r", "").replace("\n", "")
-        proxy = 'https://' + proxy
+        proxy = 'http://' + proxy
+        proxy = 'http://5.253.61.235:8888'
         proxies_q.task_done()
+        ag = {'Host': 'ya.ru',
+              'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:97.0) Gecko/20100101 Firefox/97.0',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+              'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
+              'Accept-Encoding': 'gzip, deflate, br',
+              'Connection': 'keep-alive',
+              'Upgrade-Insecure-Requests': '1',
+              'Sec-Fetch-Dest': 'document',
+              'Sec-Fetch-Mode': 'navigate',
+              'Sec-Fetch-Site': 'None',
+              'Sec-Fetch-User': '?1',
+              'Cache-Control': 'max-age=0'}
 
         try:
-            async with aiohttp.ClientSession(headers={'User-Agent': ua.random}) as session:
-                async with session.post(url=Settings.TESTING_URL,
+            async with aiohttp.ClientSession(headers=ag) as session:
+                async with session.get(url=Settings.TESTING_URL,
                                         timeout=Settings.TIMEOUT) as response:
                     code = response.status
+                    text = await response.text()
+                    print(text)
                     print('[' + proxy + '] ' + str(code))
         except asyncio.exceptions.TimeoutError:
             print('[' + proxy + '] Timeout')
